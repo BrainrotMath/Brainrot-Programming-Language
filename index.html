@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brainrot Playground</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        // Brainrot Interpreter
+        class Brainrot {
+            constructor() {
+                this.slots = Array(42).fill(0);
+                this.pointer = 0;
+                this.instructions = [];
+                this.output = "";
+                this.input = "";
+                this.instructionPointer = 0;
+            }
+
+            commands = {
+                RIZZ: () => this.slots[this.pointer] += 10,
+                Brain: () => this.slots[this.pointer] += 1,
+                rot: () => this.slots[this.pointer] -= 1,
+                YEE: () => this.slots[this.pointer] -= 5,
+                TOILET: () => this.slots[this.pointer] *= 2,
+                SKIBIDI: () => this.pointer = (this.pointer + 1) % 42,
+                DOP: () => this.output += String.fromCharCode(this.slots[this.pointer]),
+                BOINK: () => {
+                    if (this.slots[this.pointer] % 7 === 0) {
+                        this.instructionPointer = Math.max(0, this.instructionPointer - 3);
+                    }
+                },
+                OMG: () => {
+                    if (this.input.length > 0) {
+                        this.slots[this.pointer] = this.input.charCodeAt(0);
+                        this.input = this.input.slice(1);
+                    } else {
+                        this.slots[this.pointer] = 0;
+                    }
+                },
+                ROT: () => {
+                    const prev = (this.pointer - 1 + 42) % 42;
+                    [this.slots[this.pointer], this.slots[prev]] = [this.slots[prev], this.slots[this.pointer]];
+                },
+                LMAO: () => {
+                    this.slots[this.pointer] = Math.floor(Math.random() * 128);
+                }
+            };
+
+            loadProgram(program, input = "") {
+                this.instructions = program.split(/\s+/).filter(Boolean);
+                this.input = input;
+            }
+
+            run() {
+                this.slots = Array(42).fill(0);
+                this.pointer = 0;
+                this.output = "";
+                this.instructionPointer = 0;
+                
+                while (this.instructionPointer < this.instructions.length) {
+                    const command = this.instructions[this.instructionPointer];
+                    if (this.commands[command]) {
+                        this.commands[command]();
+                    }
+                    this.instructionPointer++;
+                }
+                return this.output;
+            }
+        }
+
+        // React Components
+        const Button = ({ children, onClick, className = "", variant = "primary" }) => {
+            const baseClasses = "px-4 py-2 rounded font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 ";
+            const variantClasses = variant === "primary" 
+                ? "bg-blue-600 text-white hover:bg-blue-700 focus:ring-blue-500"
+                : "border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-gray-500";
+            
+            return (
+                <button 
+                    className={`${baseClasses} ${variantClasses} ${className}`}
+                    onClick={onClick}
+                >
+                    {children}
+                </button>
+            );
+        };
+
+        const Card = ({ children, className = "" }) => (
+            <div className={`bg-white rounded-lg shadow-lg overflow-hidden ${className}`}>
+                {children}
+            </div>
+        );
+
+        const App = () => {
+            const [code, setCode] = React.useState(
+                'RIZZ RIZZ RIZZ RIZZ RIZZ RIZZ RIZZ RIZZ RIZZ RIZZ\nDOP'
+            );
+            const [input, setInput] = React.useState('');
+            const [output, setOutput] = React.useState('');
+            const [memory, setMemory] = React.useState(Array(42).fill(0));
+            const [pointer, setPointer] = React.useState(0);
+
+            const runCode = React.useCallback(() => {
+                const interpreter = new Brainrot();
+                interpreter.loadProgram(code, input);
+                const result = interpreter.run();
+                setOutput(result);
+                setMemory([...interpreter.slots]);
+                setPointer(interpreter.pointer);
+            }, [code, input]);
+
+            const handleReset = () => {
+                setMemory(Array(42).fill(0));
+                setPointer(0);
+                setOutput('');
+            };
+
+            return (
+                <div className="min-h-screen bg-gray-100 py-8">
+                    <div className="max-w-4xl mx-auto px-4">
+                        <Card className="mb-6">
+                            <div className="p-6">
+                                <h1 className="text-2xl font-bold mb-6">Brainrot Playground</h1>
+                                
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Code:</label>
+                                        <textarea
+                                            value={code}
+                                            onChange={(e) => setCode(e.target.value)}
+                                            className="w-full h-40 p-2 border rounded font-mono"
+                                            spellCheck="false"
+                                        />
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Input:</label>
+                                        <input
+                                            type="text"
+                                            value={input}
+                                            onChange={(e) => setInput(e.target.value)}
+                                            className="w-full p-2 border rounded"
+                                        />
+                                    </div>
+                                    
+                                    <div className="flex space-x-2">
+                                        <Button onClick={runCode}>Run</Button>
+                                        <Button onClick={handleReset} variant="secondary">Reset</Button>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Output:</label>
+                                        <div className="p-2 border rounded min-h-8 font-mono bg-gray-50">
+                                            {output || <span className="text-gray-400">No output yet</span>}
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label className="block text-sm font-medium mb-2">Memory State:</label>
+                                        <div className="overflow-x-auto">
+                                            <div className="flex flex-nowrap gap-1 font-mono text-sm">
+                                                {memory.map((value, index) => (
+                                                    <div
+                                                        key={index}
+                                                        className={`flex-none w-8 h-8 flex items-center justify-center border rounded
+                                                            ${index === pointer ? 'bg-blue-100 border-blue-500' : 'bg-gray-50'}`}
+                                                    >
+                                                        {value}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </Card>
+
+                        <Card>
+                            <div className="p-6">
+                                <h2 className="text-xl font-bold mb-4">Command Reference</h2>
+                                <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div>RIZZ: Add 10</div>
+                                    <div>Brain: Add 1</div>
+                                    <div>rot: Subtract 1</div>
+                                    <div>YEE: Subtract 5</div>
+                                    <div>TOILET: Multiply by 2</div>
+                                    <div>SKIBIDI: Move right</div>
+                                    <div>DOP: Output character</div>
+                                    <div>BOINK: Jump if divisible by 7</div>
+                                    <div>OMG: Read input</div>
+                                    <div>ROT: Swap with previous</div>
+                                    <div>LMAO: Random value</div>
+                                </div>
+                            </div>
+                        </Card>
+                    </div>
+                </div>
+            );
+        };
+
+        // Render the app
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
